@@ -15,7 +15,6 @@ interface selectResource extends HTMLDivElement
 
     list: Map<Element, string>;
 
-    mount: appmount;
     table: HTMLTableElement;
     filter: HTMLInputElement;
     refresh: HTMLButtonElement;
@@ -38,7 +37,6 @@ interface downloadSegments extends HTMLDivElement
         url: string
     }[];
 
-    mount: appmount;
     table: HTMLTableElement;
     url: HTMLInputElement;
     refresh: HTMLButtonElement;
@@ -104,7 +102,6 @@ RHU.import(RHU.module({ trace: new Error(),
         
         let selectResource = function(this: selectResource)
         {
-            this.mount = this.parentElement as appmount;
             this.list = new Map();
          
             this.reload();
@@ -113,15 +110,21 @@ RHU.import(RHU.module({ trace: new Error(),
             })
             this.filter.addEventListener("change", () => {
                 let filter = this.filter.value;
-                let values = [...this.list].sort((a, b) => {
-                    return similar(b[1], filter) - similar(a[1], filter);
-                });
+                let values = [...this.list];
+                if (filter.trim() === "")
+                {
+                    values = values.sort((a, b) => {
+                        return similar(b[1], filter) - similar(a[1], filter);
+                    }).splice(0, values.length < 10 ? values.length : 10);
+                }
                 let fragment = new DocumentFragment();
                 for (let value of values)
                 {
                     fragment.append(value[0]);
                 }
                 this.table.replaceChildren(fragment);
+                let computed = window.getComputedStyle(this.table);
+                this.filter.style.width = `${parseInt(computed.width) - 40}px`;
             })
         } as selectResourceConstructor;
         selectResource.prototype.reload = function()
@@ -136,7 +139,7 @@ RHU.import(RHU.module({ trace: new Error(),
                 `
                     <tr>
                         <td>
-                            <button style="width: 30px; height: 30px">+</button>
+                            <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px">+</button>
                         </td>
                         <td>
                             <span style="text-overflow: ellipsis; color: white;">${name}</span>
@@ -146,24 +149,24 @@ RHU.import(RHU.module({ trace: new Error(),
                 ).children[0];
                 let button = row.children[0].children[0] as HTMLButtonElement;
                 button.addEventListener("click", () => {
-                    this.mount.segments.reload(name);
+                    mount.segments.reload(name);
                 });
                 this.list.set(row, name);
                 fragment.append(row);
             }
             this.table.replaceChildren(fragment);
+            let computed = window.getComputedStyle(this.table);
+            this.filter.style.width = `${parseInt(computed.width) - 40}px`;
         };
         RHU.Macro(selectResource, "selectResource", //html
         `
             <div style="
-            width: 100%;
             margin: 0px; 10px;
             ">
-                <button style="width: 30px; height: 30px;" rhu-id="refresh">@</button>
-                <input rhu-id="filter" style="height: 30px; width: 90%;" type="text">
+                <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="refresh">@</button>
+                <input rhu-id="filter" style="border-radius: 4px; background-color: white; height: 30px;" type="text">
             </div>
             <table rhu-id="table" style="
-                width: 100%;
             ">
             </table>
         `, {
@@ -171,7 +174,6 @@ RHU.import(RHU.module({ trace: new Error(),
             `<div style="
             color: white;
             padding: 10px;
-            width: 100%;
             margin-top: 10px;
             border-top-style: solid;
             border-top-width: 1px;
@@ -181,7 +183,6 @@ RHU.import(RHU.module({ trace: new Error(),
 
         let downloadSegments = function(this: downloadSegments)
         {
-            this.mount = this.parentElement as appmount;
             this.refresh.addEventListener("click", () => {
                 this.reload(this.url.value);
             });
@@ -244,7 +245,7 @@ RHU.import(RHU.module({ trace: new Error(),
                 `
                     <tr>
                         <td>
-                            <button style="width: 30px; height: 30px;">V</button>
+                            <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;">V</button>
                         </td>
                         <td>
                             <span style="text-overflow: ellipsis; color: white;">${segment.name}</span>
@@ -275,6 +276,8 @@ RHU.import(RHU.module({ trace: new Error(),
                 fragment.append(row);
             }
             this.table.replaceChildren(fragment);
+            let computed = window.getComputedStyle(this.table);
+            this.url.style.width = `${parseInt(computed.width) - 40}px`;
         };
         downloadSegments.prototype.download = function(i: number = 0)
         {
@@ -303,15 +306,13 @@ RHU.import(RHU.module({ trace: new Error(),
         RHU.Macro(downloadSegments, "downloadSegments", //html
         `
             <div style="
-            width: 100%;
             margin: 0px; 10px;
             ">
-                <button style="width: 30px; height: 30px;" rhu-id="refresh">@</button>
-                <input rhu-id="url" style="height: 30px; width: 80%;" type="text">
-                <button style="width: 30px; height: 30px;" rhu-id="get">V</button>
+                <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="refresh">@</button>
+                <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="get">V</button>
+                <input rhu-id="url" style="background-color: white; border-radius: 4px; height: 30px;" type="text">
             </div>
             <table rhu-id="table" style="
-                width: 100%;
             ">
             </table>
         `, {
@@ -319,7 +320,6 @@ RHU.import(RHU.module({ trace: new Error(),
             `<div style="
             color: white;
             padding: 10px;
-            width: 100%;
             margin-top: 10px;
             border-top-style: solid;
             border-top-width: 1px;
@@ -338,10 +338,9 @@ RHU.import(RHU.module({ trace: new Error(),
         `
             <!-- navbar -->
             <div style="
-            width: 100%;
             margin: 0px; 10px;
             ">
-                <button style="width: 30px; height: 30px;" rhu-id="close">X</button>
+                <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="close">X</button>
             </div>
             <!-- content -->
             <rhu-macro rhu-id="select" rhu-type="selectResource"></rhu-macro>
@@ -350,10 +349,9 @@ RHU.import(RHU.module({ trace: new Error(),
             element: //html
             `<div style="
                 z-index: 9999;
-                position: absolute;
+                position: fixed;
                 top: 0;
                 left: 0;
-                width: 100%;
                 background-color: #202124;
                 display: none;
             "></div>`
@@ -363,8 +361,13 @@ RHU.import(RHU.module({ trace: new Error(),
         document.body.append(mount);
         let trigger = RHU.Macro.parseDomString(//html
             `<button style="
+                border-radius: 4px; 
+                background-color: white; 
+                border-style: solid;
+                border-color: black;
+                border-width: 1px;
                 z-index: 9999;
-                position: absolute;
+                position: fixed;
                 right: 10px;
                 bottom: 10px;
                 padding: 10px;
