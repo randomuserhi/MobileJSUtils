@@ -28,39 +28,62 @@ RHU.import(RHU.module({ trace: new Error(),
             return hits / total;
         }
         let { RHU } = window.RHU.require(window, this);
+        let open = window.XMLHttpRequest.prototype.open;
         let selectResource = function () {
             this.list = new Map();
+            this.additional = [];
+            let additional = this.additional;
+            window.XMLHttpRequest.prototype.open = function (method, url) {
+                additional.push(url.toString());
+                open.call(this, ...arguments);
+            };
             this.reload();
+            this.deep.addEventListener("click", () => {
+                let iframe = document.querySelector("iframe");
+                if (RHU.exists(iframe)) {
+                    let a = document.createElement("a");
+                    a.href = iframe.src;
+                    a.click();
+                }
+                else
+                    alert("no iframe");
+            });
             this.refresh.addEventListener("click", () => {
                 this.reload();
             });
             this.filter.addEventListener("change", () => {
-                let filter = this.filter.value;
-                let values = [...this.list];
-                if (filter.trim() === "") {
-                    values = values.sort((a, b) => {
-                        return similar(b[1], filter) - similar(a[1], filter);
-                    }).splice(0, values.length < 10 ? values.length : 10);
-                }
-                let fragment = new DocumentFragment();
-                for (let value of values) {
-                    fragment.append(value[0]);
-                }
-                this.table.replaceChildren(fragment);
-                let computed = window.getComputedStyle(this.table);
-                this.filter.style.width = `${parseInt(computed.width) - 40}px`;
+                this.filterOperation();
             });
+        };
+        selectResource.prototype.filterOperation = function () {
+            let filter = this.filter.value;
+            let values = [...this.list];
+            if (filter.trim() !== "") {
+                values = values.sort((a, b) => {
+                    return similar(b[1], filter) - similar(a[1], filter);
+                }).splice(0, values.length < 10 ? values.length : 10);
+            }
+            let fragment = new DocumentFragment();
+            for (let value of values) {
+                fragment.append(value[0]);
+            }
+            this.table.replaceChildren(fragment);
+            let computed = window.getComputedStyle(this.table);
+            this.filter.style.width = `${parseInt(computed.width) - 40}px`;
         };
         selectResource.prototype.reload = function () {
             this.list.clear();
             let fragment = new DocumentFragment();
-            let resources = performance.getEntriesByType("resource");
+            let resources = [];
+            for (let entry of performance.getEntriesByType("resource"))
+                resources.push(entry.name);
+            resources.push(...this.additional);
             for (let resource of resources) {
-                let name = resource.name;
+                let name = resource;
                 let row = RHU.Macro.parseDomString(`
                     <tr>
                         <td>
-                            <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px">+</button>
+                            <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px; color: black;">+</button>
                         </td>
                         <td>
                             <span style="text-overflow: ellipsis; color: white;">${name}</span>
@@ -77,13 +100,15 @@ RHU.import(RHU.module({ trace: new Error(),
             this.table.replaceChildren(fragment);
             let computed = window.getComputedStyle(this.table);
             this.filter.style.width = `${parseInt(computed.width) - 40}px`;
+            this.filterOperation();
         };
         RHU.Macro(selectResource, "selectResource", `
             <div style="
             margin: 0px; 10px;
             ">
-                <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="refresh">@</button>
-                <input rhu-id="filter" style="border-radius: 4px; background-color: white; height: 30px;" type="text">
+                <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="deep">^</button>
+                <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="refresh">@</button>
+                <input rhu-id="filter" style="color: black; border-radius: 4px; background-color: white; height: 30px;" type="text">
             </div>
             <table rhu-id="table" style="
             ">
@@ -105,6 +130,9 @@ RHU.import(RHU.module({ trace: new Error(),
             this.get.addEventListener("click", () => {
                 this.download();
             });
+            this.meta.addEventListener("click", () => {
+                this.downloadMeta();
+            });
         };
         downloadSegments.prototype.reload = function (url) {
             this.url.value = url;
@@ -113,13 +141,42 @@ RHU.import(RHU.module({ trace: new Error(),
             }).then(async (resp) => {
                 if (resp.status === 200) {
                     let blob = await resp.blob();
-                    let blobURL = window.URL.createObjectURL(blob);
-                    let a = document.createElement("a");
-                    a.href = blobURL;
-                    a.download = `m3u8 ${new Date()}.m3u8`;
-                    a.click();
                     let text = await blob.text();
                     this.parse(url, text);
+                }
+                else
+                    alert("Failed to GET 'index-s32.m3u8'");
+            });
+        };
+        downloadSegments.prototype.downloadMeta = function () {
+            if (this.url.value === "") {
+                alert("No URL.");
+                return;
+            }
+            fetch(this.url.value, {
+                method: "GET",
+            }).then(async (resp) => {
+                if (resp.status === 200) {
+                    let title = `m3u8 ${new Date()}`;
+                    {
+                        let blob = await resp.blob();
+                        let blobURL = window.URL.createObjectURL(blob);
+                        let a = document.createElement("a");
+                        a.href = blobURL;
+                        a.download = `${title}.m3u8`;
+                        a.click();
+                        window.URL.revokeObjectURL(blobURL);
+                    }
+                    {
+                        let json = JSON.stringify({ url: this.url.value });
+                        let blob = new Blob([json], { type: 'text/json' });
+                        let url = window.URL.createObjectURL(blob);
+                        let a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${title}.json`;
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                    }
                 }
                 else
                     alert("Failed to GET 'index-s32.m3u8'");
@@ -134,7 +191,8 @@ RHU.import(RHU.module({ trace: new Error(),
                     let duration = parseFloat(line.split(":")[1]);
                     let partial = lines[i++];
                     let name = partial.split("?")[0];
-                    let full = `${url}/${partial}`;
+                    let core = url.split(/\/index\-\w*\.m3u8/);
+                    let full = `${core[0]}/${partial}`;
                     this.segments.push({
                         name: name,
                         duration: duration,
@@ -150,7 +208,7 @@ RHU.import(RHU.module({ trace: new Error(),
                 let row = RHU.Macro.parseDomString(`
                     <tr>
                         <td>
-                            <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;">V</button>
+                            <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;">V</button>
                         </td>
                         <td>
                             <span style="text-overflow: ellipsis; color: white;">${segment.name}</span>
@@ -172,6 +230,7 @@ RHU.import(RHU.module({ trace: new Error(),
                             a.href = url;
                             a.download = `${segment.name}.ts`;
                             a.click();
+                            window.URL.revokeObjectURL(url);
                         }
                         else
                             alert(`Failed to GET segment '${segment.name}'`);
@@ -198,6 +257,7 @@ RHU.import(RHU.module({ trace: new Error(),
                     a.href = url;
                     a.download = `${this.segments[i].name}.ts`;
                     a.click();
+                    window.URL.revokeObjectURL(url);
                     this.download(++i);
                 }
                 else
@@ -208,9 +268,10 @@ RHU.import(RHU.module({ trace: new Error(),
             <div style="
             margin: 0px; 10px;
             ">
-                <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="refresh">@</button>
-                <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="get">V</button>
-                <input rhu-id="url" style="background-color: white; border-radius: 4px; height: 30px;" type="text">
+                <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="refresh">@</button>
+                <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="meta">M</button>
+                <input rhu-id="url" style="color: black; background-color: white; border-radius: 4px; height: 30px;" type="text">
+                <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="get">V</button>
             </div>
             <table rhu-id="table" style="
             ">
@@ -236,13 +297,16 @@ RHU.import(RHU.module({ trace: new Error(),
             <div style="
             margin: 0px; 10px;
             ">
-                <button style="border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="close">X</button>
+                <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="close">X</button>
             </div>
             <!-- content -->
             <rhu-macro rhu-id="select" rhu-type="selectResource"></rhu-macro>
             <rhu-macro rhu-id="segments" rhu-type="downloadSegments"></rhu-macro>
         `, {
             element: `<div style="
+                width: 100%;
+                height: 100%;
+                overflow: auto;
                 z-index: 9999;
                 position: fixed;
                 top: 0;
@@ -254,6 +318,7 @@ RHU.import(RHU.module({ trace: new Error(),
         let mount = document.createMacro("appmount");
         document.body.append(mount);
         let trigger = RHU.Macro.parseDomString(`<button style="
+                color: black; 
                 border-radius: 4px; 
                 background-color: white; 
                 border-style: solid;

@@ -21,7 +21,7 @@
         a.href = url;
         a.download = `${util.package} ${new Date()}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        window.URL.revokeObjectURL(url);
     }
     try
     {
