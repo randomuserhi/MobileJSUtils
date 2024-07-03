@@ -183,6 +183,7 @@ RHU.import(RHU.module({ trace: new Error(),
             });
         };
         downloadSegments.prototype.parse = function (url, m3u8) {
+            try {
             this.segments = [];
             let lines = m3u8.split("\n");
             for (let i = 0; i < lines.length;) {
@@ -193,7 +194,7 @@ RHU.import(RHU.module({ trace: new Error(),
                     let name = partial.split("?")[0];
                     let core = url.split(/\/media\/.*\.m3u8/);
                     let base = this.base.value.trim();
-                    let full = new URL(partial, base ? base : undefined).toString();
+                    let full = new URL(partial, base ? base : core).toString();
                     this.segments.push({
                         name: name,
                         duration: duration,
@@ -201,6 +202,7 @@ RHU.import(RHU.module({ trace: new Error(),
                     });
                 }
             }
+            } catch (e) { alert(e); }
             this.render();
         };
         downloadSegments.prototype.render = function () {
@@ -234,7 +236,7 @@ RHU.import(RHU.module({ trace: new Error(),
                             window.URL.revokeObjectURL(url);
                         }
                         else
-                            alert(`Failed to GET segment '${segment.name}'`);
+                            alert(`Failed to GET segment '${segment.url}'`);
                     });
                 });
                 fragment.append(row);
