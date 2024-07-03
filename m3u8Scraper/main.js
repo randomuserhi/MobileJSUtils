@@ -194,8 +194,7 @@ RHU.import(RHU.module({ trace: new Error(),
                     let name = partial.split("?")[0];
                     let core = url.split(/\/media\/.*\.m3u8/);
                     let base = this.base.value.trim();
-                    throw new Error(base);
-                    let full = new URL(partial, base !== "" ? base : core).toString();
+                    let full = `${base !== "" ? base : core}/${partial}`;
                     this.segments.push({
                         name: name,
                         duration: duration,
