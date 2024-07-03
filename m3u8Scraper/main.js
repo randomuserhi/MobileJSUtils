@@ -253,6 +253,7 @@ RHU.import(RHU.module({ trace: new Error(),
             fetch(this.segments[i].url, {
                 method: "GET",
             }).then(async (resp) => {
+                this.prog.innerHTML = `${i}/${this.segments.length}`;
                 if (resp.status === 200) {
                     let blob = await resp.blob();
                     let url = window.URL.createObjectURL(blob);
@@ -277,7 +278,8 @@ RHU.import(RHU.module({ trace: new Error(),
                 <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="get">V</button>
                 <input rhu-id="base" style="color: black; background-color: white; border-radius: 4px; height: 30px;" type="text">
             </div>
-            <div>v0.0.2</div>
+            <div>v0.0.3</div>
+            <div rhu-id="prog"></div>
             <table rhu-id="table" style="
             ">
             </table>
