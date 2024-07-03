@@ -277,6 +277,7 @@ RHU.import(RHU.module({ trace: new Error(),
                 <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="get">V</button>
                 <input rhu-id="base" style="color: black; background-color: white; border-radius: 4px; height: 30px;" type="text">
             </div>
+            <div>v0.0.1</div>
             <table rhu-id="table" style="
             ">
             </table>
