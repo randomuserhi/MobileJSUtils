@@ -192,7 +192,8 @@ RHU.import(RHU.module({ trace: new Error(),
                     let partial = lines[i++];
                     let name = partial.split("?")[0];
                     let core = url.split(/\/media\/.*\.m3u8/);
-                    let full = `${core[0]}/${partial}`;
+                    let base = this.bare.value.trim();
+                    let full = new URL(partial, base ? base : undefined).toString();
                     this.segments.push({
                         name: name,
                         duration: duration,
@@ -272,6 +273,7 @@ RHU.import(RHU.module({ trace: new Error(),
                 <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="meta">M</button>
                 <input rhu-id="url" style="color: black; background-color: white; border-radius: 4px; height: 30px;" type="text">
                 <button style="color: black; border-radius: 4px; background-color: white; width: 30px; height: 30px;" rhu-id="get">V</button>
+                <input rhu-id="base" style="color: black; background-color: white; border-radius: 4px; height: 30px;" type="text">
             </div>
             <table rhu-id="table" style="
             ">
