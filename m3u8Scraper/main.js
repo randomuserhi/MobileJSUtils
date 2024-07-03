@@ -145,7 +145,7 @@ RHU.import(RHU.module({ trace: new Error(),
                     this.parse(url, text);
                 }
                 else
-                    alert("Failed to GET 'index-s32.m3u8'");
+                    alert("Failed to GET '.m3u8'");
             });
         };
         downloadSegments.prototype.downloadMeta = function () {
@@ -179,7 +179,7 @@ RHU.import(RHU.module({ trace: new Error(),
                     }
                 }
                 else
-                    alert("Failed to GET 'index-s32.m3u8'");
+                    alert("Failed to GET '.m3u8'");
             });
         };
         downloadSegments.prototype.parse = function (url, m3u8) {
@@ -191,6 +191,7 @@ RHU.import(RHU.module({ trace: new Error(),
                     let duration = parseFloat(line.split(":")[1]);
                     let partial = lines[i++];
                     let name = partial.split("?")[0];
+                    console.log(url);
                     let core = url.split(/\/index\-\w*\.m3u8/);
                     let full = `${core[0]}/${partial}`;
                     this.segments.push({

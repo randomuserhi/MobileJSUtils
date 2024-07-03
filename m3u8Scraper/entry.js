@@ -1,5 +1,5 @@
 (function () {
-    let cdn = `https://randomuserhi.github.io/MobileUtils`;
+    let cdn = `https://randomuserhi.github.io/MobileJSUtils`;
     let util = {
         package: "m3u8Scraper",
         files: [
