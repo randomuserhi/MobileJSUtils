@@ -191,8 +191,7 @@ RHU.import(RHU.module({ trace: new Error(),
                     let duration = parseFloat(line.split(":")[1]);
                     let partial = lines[i++];
                     let name = partial.split("?")[0];
-                    console.log(url);
-                    let core = url.split(/\/index\-\w*\.m3u8/);
+                    let core = url.split(/\/media\/.*\.m3u8/);
                     let full = `${core[0]}/${partial}`;
                     this.segments.push({
                         name: name,
